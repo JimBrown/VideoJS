@@ -25,7 +25,7 @@ SD video files go here: /albums.SD/videos/myvideo.mp4
 ```
 (The counterpart videos must follow the same paths.)
 ```
-NOTE: This player does not support external albums!
+NOTE: This plugin does not support external albums!
 NOTE: This plugin does not support playlists!
 ```
 Options:
