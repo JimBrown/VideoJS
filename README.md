@@ -1,7 +1,6 @@
 #VideoJS
 
 Enable VideoJS to handle multimedia files.
-Version:
 Author: Jim Brown
 IMPORTANT: Only one multimedia extension plugin can be enabled at the time and the class-video plugin must be enabled, too.
 
