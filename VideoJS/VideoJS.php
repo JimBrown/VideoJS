@@ -57,12 +57,20 @@ class VideoJS_options {
 	function VideoJS_options() {
 		setOptionDefault('VideoJS_autoplay', '');
 		setOptionDefault('VideoJS_poster', 1);
+		setOptionDefault('VideoJS_resolution', 'high');
 	}
 
 	function getOptionsSupported() {
 
-		return	array(	gettext('Poster (Videothumb)')		=> array('key' => 'VideoJS_poster',		'type' => OPTION_TYPE_CHECKBOX, 'desc' => gettext("If the videothumb should be shown (VideoJS calls it poster).")),
-										gettext('Autoplay')								=> array('key' => 'VideoJS_autoplay',	'type' => OPTION_TYPE_CHECKBOX,	'desc' => gettext("Disabled automatically if several players on one page"))
+		return	array(	gettext('Poster (Videothumb)')		=> array('key' => 'VideoJS_poster',			'type' => OPTION_TYPE_CHECKBOX,
+											'desc' => gettext("If the videothumb should be shown (VideoJS calls it poster).")),
+										gettext('Autoplay')								=> array('key' => 'VideoJS_autoplay',		'type' => OPTION_TYPE_CHECKBOX,
+											'desc' => gettext("Disabled automatically if several players on one page")),
+										gettext('Default Resolution')			=> array('key' => 'VideoJS_resolution',	'type' => OPTION_TYPE_SELECTOR,	
+											'selections' => array(
+												gettext('High (HD)')		 => "high",
+												gettext('Low (SD)') => "low"),
+											'desc' => gettext("Default resolution where multiple resolutions are available"))
 		);
 	}
 
@@ -106,7 +114,7 @@ class VideoJS {
 
 		$autoplay = '';
 		if (getOption('VideoJS_autoplay')) {
-			$autoplay = '$(".fp-engine").attr("autoplay","");';
+			$autoplay = ' autoplay';
 		}
 
 		$videoThumb = '';
@@ -114,26 +122,15 @@ class VideoJS {
 			$videoThumb = $movie->getCustomImage(null, $this->width, $this->height, $this->width, $this->height, null, null, true);
 		}
 
-		$videoTitle = "";
-		if (getOption('zenfluid_titlebreadcrumb')) {
-			$parentalbum = $_zp_current_album->getParent();
-			if(!empty($parentalbum)) {
-				$videoTitle = $parentalbum->getTitle();
-			}
-			$videoTitle = $videoTitle . ": " . getAlbumTitle() . ": ";
-		} 
-		$videoTitle = $videoTitle . getImageTitle();
-
-		$videoUID = getImageData('id');
-
+		$videoRes = getOption('VideoJS_resolution');
+		
 		$metadata = getImageMetaData(NULL,false);
-
 		$vidWidth = $metadata['VideoResolution_x'];
 		$vidHeight = $metadata['VideoResolution_y'];
 		
 		$playerconfig = '
 			<div id="player" >
-				<video id="MyPlayer" class="video-js vjs-default-skin" controls preload="auto" width=' . $vidWidth . ' poster="' . $videoThumb . '">
+				<video id="MyPlayer" class="video-js vjs-default-skin" controls' . $autoplay . ' preload="auto" width=' . $vidWidth . ' poster="' . $videoThumb . '">
 					' . $this->getCounterpartFile($moviepath, "mp4", "HD") . '
 					' . $this->getCounterpartFile($moviepath, "mp4", "SD") . '
 					' . $this->getCounterpartFile($moviepath, "ogv", "HD") . '
@@ -146,7 +143,7 @@ class VideoJS {
 				videojs("MyPlayer", {
 					plugins: {
 						videoJsResolutionSwitcher: {
-							default: "high",
+							default: "' . $videoRes . '",
 							dynamicLabel: true
 						}
 					}
