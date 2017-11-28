@@ -38,184 +38,187 @@ $plugin_author = "Jim Brown";
 $plugin_disable = zpFunctions::pluginDisable(array(array(!extensionEnabled('class-video'), gettext('This plugin requires the <em>class-video</em> plugin')), array(!extensionEnabled('VideoJS') && class_exists('Video') && Video::multimediaExtension() != 'pseudoPlayer', sprintf(gettext('VideoJS not enabled, %s is already instantiated.'), class_exists('Video') ? Video::multimediaExtension() : false)), array(getOption('album_folder_class') === 'external', (gettext('This player does not support <em>External Albums</em>.')))));
 
 if ($plugin_disable) {
-	enableExtension('VideoJS', 0);
+  enableExtension('VideoJS', 0);
 } else {
-	Gallery::addImageHandler('flv', 'Video');
-	Gallery::addImageHandler('fla', 'Video');
-	Gallery::addImageHandler('mp3', 'Video');
-	Gallery::addImageHandler('mp4', 'Video');
-	Gallery::addImageHandler('m4v', 'Video');
-	Gallery::addImageHandler('m4a', 'Video');
+  Gallery::addImageHandler('flv', 'Video');
+  Gallery::addImageHandler('fla', 'Video');
+  Gallery::addImageHandler('mp3', 'Video');
+  Gallery::addImageHandler('mp4', 'Video');
+  Gallery::addImageHandler('m4v', 'Video');
+  Gallery::addImageHandler('m4a', 'Video');
 }
 
 $option_interface = 'VideoJS_options';
 
 class VideoJS_options {
 
-	public $name = 'VideoJS';
+  public $name = 'VideoJS';
 
-	function VideoJS_options() {
-		setOptionDefault('VideoJS_autoplay', '');
-		setOptionDefault('VideoJS_poster', 1);
-		setOptionDefault('VideoJS_resolution', 'high');
-	}
+  function VideoJS_options() {
+    setOptionDefault('VideoJS_autoplay', '');
+    setOptionDefault('VideoJS_poster', 1);
+    setOptionDefault('VideoJS_resolution', 'high');
+  }
 
-	function getOptionsSupported() {
+  function getOptionsSupported() {
 
-		return	array(	gettext('Poster (Videothumb)')		=> array('key' => 'VideoJS_poster',			'type' => OPTION_TYPE_CHECKBOX,
-											'desc' => gettext("If the videothumb should be shown (VideoJS calls it poster).")),
-										gettext('Autoplay')								=> array('key' => 'VideoJS_autoplay',		'type' => OPTION_TYPE_CHECKBOX,
-											'desc' => gettext("Disabled automatically if several players on one page")),
-										gettext('Default Resolution')			=> array('key' => 'VideoJS_resolution',	'type' => OPTION_TYPE_SELECTOR,	
-											'selections' => array(
-												gettext('High (HD)')		 => "high",
-												gettext('Low (SD)') => "low"),
-											'desc' => gettext("Default resolution where multiple resolutions are available"))
-		);
-	}
+    return  array(gettext('Poster (Videothumb)') => array('key' => 'VideoJS_poster',
+                    'type' => OPTION_TYPE_CHECKBOX,
+                    'desc' => gettext('If the videothumb should be shown (VideoJS calls it poster).')),
+                  gettext('Autoplay') => array('key' => 'VideoJS_autoplay',
+                    'type' => OPTION_TYPE_CHECKBOX,
+                    'desc' => gettext('Disabled automatically if several players on one page')),
+                  gettext('Default Resolution') => array('key' => 'VideoJS_resolution',
+                    'type' => OPTION_TYPE_SELECTOR, 
+                    'selections' => array(
+                      gettext('High (HD)') => 'high',
+                      gettext('Low (SD)') => 'low'),
+                    'desc' => gettext("Default resolution where multiple resolutions are available"))
+                  );
+  }
 
 }
 
 class VideoJS {
 
-	public $width = '';
-	public $height = '';
+  public $width = '';
+  public $height = '';
 
-	function __construct() {
-		$this->width = 1280;
-		$this->height = 720;
-	}
+  function __construct() {
+    $this->width = 1280;
+    $this->height = 720;
+  }
 
-	static function headJS() { ?>
-		<link type="text/css" rel="stylesheet" href="<?php echo WEBPATH; ?>/plugins/VideoJS/video-js.css"/>
-		<link type="text/css" rel="stylesheet" href="<?php echo WEBPATH; ?>/plugins/VideoJS/videojs-resolution-switcher.css"/>
-		<script type="text/javascript" src="<?php echo WEBPATH; ?>/plugins/VideoJS/ie8/videojs-ie8.min.js"></script>
-		<script type="text/javascript" src="<?php echo WEBPATH; ?>/plugins/VideoJS/video.js"></script>
-		<script type="text/javascript" src="<?php echo WEBPATH; ?>/plugins/VideoJS/videojs-resolution-switcher.js"></script>
-		<?php
-	}
-	
-	/**
-	 * Get the JS configuration of VideoJS
-	 *
-	 * @param mixed $movie the image object
-	 * @param string $movietitle the title of the movie
-	 *
-	 */
-	function getPlayerConfig($movie, $movietitle = NULL) {
-		global $_zp_current_album;
-		
-		$moviepath = $movie->getFullImageURL(FULLWEBPATH);
+  static function headJS() {
+    ?>
+    <link type="text/css" rel="stylesheet" href="<?php echo WEBPATH; ?>/plugins/VideoJS/video-js.css"/>
+    <link type="text/css" rel="stylesheet" href="<?php echo WEBPATH; ?>/plugins/VideoJS/videojs-resolution-switcher.css"/>
+    <script type="text/javascript" src="<?php echo WEBPATH; ?>/plugins/VideoJS/ie8/videojs-ie8.min.js"></script>
+    <script type="text/javascript" src="<?php echo WEBPATH; ?>/plugins/VideoJS/video.js"></script>
+    <script type="text/javascript" src="<?php echo WEBPATH; ?>/plugins/VideoJS/videojs-resolution-switcher.js"></script>
+    <?php
+  }
+  
+  /**
+   * Get the JS configuration of VideoJS
+   *
+   * @param mixed $movie the image object
+   * @param string $movietitle the title of the movie
+   *
+   */
+  function getPlayerConfig($movie, $movietitle = NULL) {
+    global $_zp_current_album;
+    
+    $moviepath = $movie->getFullImageURL(FULLWEBPATH);
 
-		$ext = getSuffix($moviepath);
-		if (!in_array($ext, array('m4v', 'mp4', 'flv'))) {
-			return '<span class="error">' . gettext('This multimedia format is not supported by VideoJS') . '</span>';
-		}
+    $ext = getSuffix($moviepath);
+    if (!in_array($ext, array('m4v', 'mp4', 'flv'))) {
+      return '<span class="error">' . gettext('This multimedia format is not supported by VideoJS') . '</span>';
+    }
 
-		$autoplay = '';
-		if (getOption('VideoJS_autoplay')) {
-			$autoplay = ' autoplay';
-		}
+    $autoplay = '';
+    if (getOption('VideoJS_autoplay')) {
+      $autoplay = ' autoplay';
+    }
 
-		$videoThumb = '';
-		if (getOption('VideoJS_poster')) {
-			$videoThumb = $movie->getCustomImage(null, $this->width, $this->height, $this->width, $this->height, null, null, true);
-		}
+    $videoThumb = '';
+    if (getOption('VideoJS_poster')) {
+      $videoThumb = $movie->getCustomImage(null, $this->width, $this->height, $this->width, $this->height, null, null, true);
+    }
 
-		$videoRes = getOption('VideoJS_resolution');
-		
-		$metadata = getImageMetaData(NULL,false);
-		$vidWidth = $metadata['VideoResolution_x'];
-		$vidHeight = $metadata['VideoResolution_y'];
-		
-		$playerconfig = '
-			<div id="player" >
-				<video id="MyPlayer" class="video-js vjs-default-skin" controls' . $autoplay . ' preload="auto" width=' . $vidWidth . ' poster="' . $videoThumb . '">
-					' . $this->getCounterpartFile($moviepath, "mp4", "HD") . '
-					' . $this->getCounterpartFile($moviepath, "mp4", "SD") . '
-					' . $this->getCounterpartFile($moviepath, "ogv", "HD") . '
-					' . $this->getCounterpartFile($moviepath, "ogv", "SD") . '
-					' . $this->getCounterpartFile($moviepath, "webm", "HD") . '
-					' . $this->getCounterpartFile($moviepath, "webm", "SD") . '
-				</video>
-			</div>
-			<script type="text/javascript">
-				videojs("MyPlayer", {
-					plugins: {
-						videoJsResolutionSwitcher: {
-							default: "' . $videoRes . '",
-							dynamicLabel: true
-						}
-					}
-				}, function(){
-					var player = this;
-					window.player = player
-					player.on("play", function(){
-						player.poster("")
-					})
-				})
-			</script>';
-		return $playerconfig;
-	}
-/*
-*/
-	/**
-	 * outputs the player configuration HTML
-	 *
-	 * @param mixed $movie the image object if empty (within albums) the current image is used
-	 * @param string $movietitle the title of the movie. if empty the Image Title is used
-	 * @param string $count unique text for when there are multiple player items on a page
-	 */
-	function printPlayerConfig($movie = NULL, $movietitle = NULL) {
-		global $_zp_current_image;
-		if (empty($movie)) {
-			$movie = $_zp_current_image;
-		}
-		echo $this->getPlayerConfig($movie, $movietitle);
-	}
+    $videoRes = getOption('VideoJS_resolution');
+    
+    $metadata = getImageMetaData(NULL,false);
+    $vidWidth = $metadata['VideoResolution_x'];
+    $vidHeight = $metadata['VideoResolution_y'];
+    
+    $playerconfig = '
+      <div id="player" >
+        <video id="MyPlayer" class="video-js vjs-default-skin" controls' . $autoplay . ' preload="auto" width=' . $vidWidth . ' poster="' . $videoThumb . '">
+          ' . $this->getCounterpartFile($moviepath, "mp4", "HD") . '
+          ' . $this->getCounterpartFile($moviepath, "mp4", "SD") . '
+          ' . $this->getCounterpartFile($moviepath, "ogv", "HD") . '
+          ' . $this->getCounterpartFile($moviepath, "ogv", "SD") . '
+          ' . $this->getCounterpartFile($moviepath, "webm", "HD") . '
+          ' . $this->getCounterpartFile($moviepath, "webm", "SD") . '
+        </video>
+      </div>
+      <script type="text/javascript">
+        videojs("MyPlayer", {
+          plugins: {
+            videoJsResolutionSwitcher: {
+              default: "' . $videoRes . '",
+              dynamicLabel: true
+            }
+          }
+        }, function(){
+          var player = this;
+          window.player = player
+          player.on("play", function(){
+            player.poster("")
+          })
+        })
+      </script>';
+    return $playerconfig;
+  }
 
-	/**
-	 * Returns the width of the player
-	 * @param object $image the image for which the width is requested
-	 *
-	 * @return int
-	 */
-	function getWidth($image = NULL) {
-		return $this->width;
-	} 
+  /**
+   * outputs the player configuration HTML
+   *
+   * @param mixed $movie the image object if empty (within albums) the current image is used
+   * @param string $movietitle the title of the movie. if empty the Image Title is used
+   * @param string $count unique text for when there are multiple player items on a page
+   */
+  function printPlayerConfig($movie = NULL, $movietitle = NULL) {
+    global $_zp_current_image;
+    if (empty($movie)) {
+      $movie = $_zp_current_image;
+    }
+    echo $this->getPlayerConfig($movie, $movietitle);
+  }
 
-	/**
-	 * Returns the height of the player
-	 * @param object $image the image for which the height is requested
-	 *
-	 * @return int
-	 */
-	function getHeight($image = NULL) {
-		return $this->height;
-	} 
+  /**
+   * Returns the width of the player
+   * @param object $image the image for which the width is requested
+   *
+   * @return int
+   */
+  function getWidth($image = NULL) {
+    return $this->width;
+  } 
 
-	function getCounterpartfile($moviepath, $ext, $definition) {
-		$counterpartFile = '';
-		$counterpart = str_replace("mp4", $ext, $moviepath);
-		$albumPath = substr(ALBUM_FOLDER_WEBPATH, strlen(WEBPATH));
-		$vidPath = getAlbumFolder() . str_replace(FULLWEBPATH . $albumPath,"",$counterpart);
-		switch (strtoupper($definition)) {
-			case "HD":
-				if (file_exists($vidPath)) {
-					$counterpartFile = '<source src="' . pathurlencode($counterpart) . '" label="HD" />';
-				}
-				break;
-			case "SD":
-				$vidPath = str_replace(rtrim(getAlbumFolder(),"/"), rtrim(getAlbumFolder(),"/") . ".SD", $vidPath);
-				$counterpart = str_replace(rtrim(ALBUM_FOLDER_WEBPATH,"/"), rtrim(ALBUM_FOLDER_WEBPATH,"/") . ".SD", $counterpart);
-				if (file_exists($vidPath)) {
-					$counterpartFile = '<source src="' . pathurlencode($counterpart) . '" label="SD" />';
-				}
-				break;
-		}
-		return $counterpartFile;
-	}
-	
+  /**
+   * Returns the height of the player
+   * @param object $image the image for which the height is requested
+   *
+   * @return int
+   */
+  function getHeight($image = NULL) {
+    return $this->height;
+  } 
+
+  function getCounterpartfile($moviepath, $ext, $definition) {
+    $counterpartFile = '';
+    $counterpart = str_replace("mp4", $ext, $moviepath);
+    $albumPath = substr(ALBUM_FOLDER_WEBPATH, strlen(WEBPATH));
+    $vidPath = getAlbumFolder() . str_replace(FULLWEBPATH . $albumPath,"",$counterpart);
+    switch (strtoupper($definition)) {
+      case "HD":
+        if (file_exists($vidPath)) {
+          $counterpartFile = '<source src="' . pathurlencode($counterpart) . '" label="HD" />';
+        }
+        break;
+      case "SD":
+        $vidPath = str_replace(rtrim(getAlbumFolder(),"/"), rtrim(getAlbumFolder(),"/") . ".SD", $vidPath);
+        $counterpart = str_replace(rtrim(ALBUM_FOLDER_WEBPATH,"/"), rtrim(ALBUM_FOLDER_WEBPATH,"/") . ".SD", $counterpart);
+        if (file_exists($vidPath)) {
+          $counterpartFile = '<source src="' . pathurlencode($counterpart) . '" label="SD" />';
+        }
+        break;
+    }
+    return $counterpartFile;
+  }
+  
 }
 
 $_zp_multimedia_extension = new VideoJS(); // claim to be the flash player.
