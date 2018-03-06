@@ -1,3 +1,7 @@
+#####NOTICE!!!!
+
+##VideoJS is now a Zenphoto20 standard plugin/extension. As such, this repository will no longer be updated or maintained.
+
 #VideoJS
 ```
 Enable VideoJS to handle multimedia files.
